@@ -1,0 +1,429 @@
+---
+title: "Projeto de Introdução à Ciência de Dados UERJ"
+author: "Mauricio Araujo e Bruno Oliveira"
+date: "`r format(Sys.time(), '%d %m %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    code_folding: hide
+
+---
+
+```{r data, include=FALSE}
+
+library(tidyverse)
+library(kableExtra)
+library(corrplot)
+load("base_de_dados.RData")
+```
+
+# **Descrição da Base de Dados**
+
+  CartolaFC é o jogo futebol fantasy mais popular do Brasil. Antes de cada rodada da Liga Brasileira de Futebol, os jogadores escolhem os atletas que desejam para seus times e marcam pontos com base em seu desempenho na vida real. Com a nossa base da dados, no ano de 2016, teremos acesso às pontuações de cada jogador a cada rodada junto de vários atributos que podemos usar na nossa análise. 
+
+## **Fonte dos dados**
+
+Kaggle: <https://www.kaggle.com/schiller/cartolafc>.
+
+Github: <https://github.com/henriquepgomide/caRtola>.
+
+
+## **Dicionário de dados**
+
+Os dados são divididos em 7 tipos de arquivos referidos ao campeonato de 2016 onde nos transformaremos esses dados em dataframes (tabelas onde podemos manipular esses dados):
+
+**Posições**
+
+* ID: ID da posição
+* Nome: Nome da posição
+* Abreviacao: Abreviação da posição
+```{r}
+posicao %>%
+  kbl() %>%
+  kable_styling()
+```
+
+**Status**
+
+*    ID: ID do status
+*    Nome: Nome do status
+    
+```{r}
+status %>%
+  kbl() %>%
+  kable_styling()
+```
+
+**Clubes**
+
+*    ID: ID do clube
+*    Nome: Nome do clube
+*    Abreviacao: Abreviação do clube
+*    Slug: Slug do clube
+    
+```{r}
+head(clubes)%>%
+  kbl() %>%
+  kable_styling()
+
+```
+**Partidas**
+
+*    ID: Id da partida
+*    Rodada: Rodada em que a partida ocorreu
+*    Clube_Casa_ID: ID do clube mandante
+*    Clube_Visitante_ID: ID do clube visitante
+*    Placar_oficial_mandante: Placar do clube mandante
+*    Placar_oficial_visitante: Placar do clube visitante
+    
+```{r}
+head(partidas)%>%
+  kbl() %>%
+  kable_styling()
+
+```
+**Atletas**
+
+ *   ID: ID do atleta
+ *   Apelido: Apelido do atleta
+ *   ClubeID: ID do clube do atleta
+ *   PosicaoID: ID da posição do atleta
+    
+```{r}
+head(atletas)%>%
+  kbl() %>%
+  kable_styling()
+
+```
+**Scouts**
+    
+*    Atleta_ID: ID do atleta
+*    Rodada: Rodada em que o scout ocorreu
+*    Clube_ID: ID do clube do atleta
+*    Participou: Indica se o jogador participou da rodada
+*    Pontos_num: Pontuação do atleta nesta rodada
+*    Media_num: Média de pontos do atleta até está rodada (inclue rodada atual)
+*    Preco_num: Preço do atleta nesta rodada
+*    Variacao_num: Variação do preço da rodada passada para atual
+*    FS: Faltas sofridas
+*    PE: Passes errados
+*    A: Assistências
+*    FT: Finalizações na trave
+*    FD: Finalizações defendidas
+*    FF: Finalizações para fora
+*    G: Gols
+*    I: Impedimentos
+*    PP: Penaltis perdidos
+*    RB: Roubadas de bola
+*    FC: Faltas cometidas
+*    GC: Gols contras
+*    CA: Cartões Amarelos
+*    CV: Cartões Vermelhos
+*    SG: Jogo sem sofrer gols
+*    DD: Defesas dificeis
+*    DP: Defesa de penaltis
+*    GS: Gols sofridos
+    
+```{r}
+head(scouts)%>%
+  kbl() %>%
+  kable_styling()
+
+```
+
+**Pontuação**
+
+* "abreviacao": abreviação,
+
+* "nome": nome,
+
+* "pontuacao": pontos ganhos para a respectiva ação
+    
+```{r}
+pontuacao%>%
+  kbl() %>%
+  kable_styling()
+
+```
+
+
+# **Preparação dos Dados**
+
+## **Questões a serem respondidas**
+
+  Com a nossa base de dados, buscaremos entender quais estratégias funcionam melhor para termos a probabilidade de somar o maior número de pontos no jogo, de acordo com a pontuação dos jogadores e suas determinadas características. 
+
+Assim poderemos responder as seguintes questões:
+
+* Quais clubes tem jogadores com mais pontos em média? 
+* Qual melhor formação?
+* Times que jogam em casa pontuam mais?
+* Vale mais a pena escalar meias defensivos ou ofensivos?
+
+Obs: Deixando claro que nossas análises serão baseadas em estatística do campeonato em questão de maneira geral e que, obviamente, não constitui a melhor estratégia já que ela pode ser superada por análises mais aprofundadas por quem conhece melhor a situação dos jogadores e clubes em determinadas rodadas separadamente.
+
+## **Tratamento dos Dados**
+  
+  Usamos a função `str()` para analisar todos 7 arquivos de dados e os tipos de seus campos concluindo que todos já estavam corretos.
+
+``` {r}
+str(clubes) #Ok
+
+str(atletas) #Ok
+
+str(partidas) #Ok
+
+str(scouts) #Ok
+
+str(pontuacao) #Ok
+
+str(posicao) #Ok
+
+str(status)  #Ok
+```
+  Usamos a função `is.na()` para também analisar os dados ausentes dos arquivos e tratá-los se necessário.
+
+```{r}
+TRUE %in% is.na(clubes) #Ok
+
+TRUE %in% is.na(atletas) #Ok
+
+TRUE %in% is.na(partidas) #Não Ok
+
+sum(is.na(partidas))/length(partidas[[1]]) #Porcentagem insignificante dos dados
+
+TRUE %in% is.na(scouts) #Não Ok
+
+sum(is.na(scouts))/length(scouts[[1]]) #Porcentagem insignificante dos dados
+
+
+
+TRUE %in% is.na(pontuacao) #Ok
+
+TRUE %in% is.na(posicao) #Ok
+
+TRUE %in% is.na(status)  #Ok
+  
+```
+  Vimos que apenas duas tabelas continham alguns dados ausentes que, felizmente, não prejudicam nossa análise já que se trata de uma parcela insignificante das mesmas.
+  
+  Porém, vimos que nos dados `atletas`, usando o `summary()`, a `posicao_id` dos atletas não estava sendo tratada como fator, assim, consultando o dataset `posicao`, achamos mais conveniente alterar para facilitar o tratamento dos dados mais a frente.
+  ``` {r}
+  summary(atletas)
+  
+                             
+atletas$posicao_id <- factor(atletas$posicao_id,
+                             levels = c(1:6),
+                             labels = c("goleiro", "lateral", "zagueiro",
+                                        "meia", "atacante", "tecnico"))
+                                        
+  summary(atletas)
+  ```
+ Obs: Algumas outras variáveis dos dados poderiam também ter sido trocadas para fatores, porém, como são 7 arquivos e não usamos tais variáveis, preferimos não mudá-las. 
+
+# **Análise Exploratória**
+
+Recapitulando as questões que iríamos tentar responder:
+
+## **Quais clubes tem jogadores com mais pontos em média?** 
+
+Para responder essa questão, filtramos apenas os jogadores que jogaram na tabela `scouts`, a partir da primeira rodada e tiramos média das pontuações de cada jogador agrupada por nome do clube (que veio da tabela`clubes` após juntarmos com a tabela de `scouts`). Após isso, ordenamos do maior para o menor. Assim, vemos que o clube com maior **média de pontos** entre seus jogadores é o Flamengo.
+```{r}
+scouts %>%
+  filter(participou & rodada>=1) %>%
+  inner_join(clubes, c("clube_id" = "id")) %>%
+  group_by(nome) %>%
+  summarise(media_pontos = mean(pontos_num), .groups = 'drop') %>%
+  arrange(desc(media_pontos)) %>%
+  kbl() %>%
+  kable_styling()
+```
+Mas tem um porém, vamos analisar a tabela que diz respeito às **médias de preço** abaixo.
+``` {r}
+scouts %>%
+  filter(participou & rodada >= 1) %>%
+  inner_join(clubes, c("clube_id" = "id")) %>%
+  group_by(nome) %>%
+  summarise(media_preco = mean(preco_num), .groups = 'drop') %>%
+  arrange(desc(media_preco)) %>%
+  kbl() %>%
+  kable_styling()
+```
+Como podemos ver, o Flamengo está entre os primeiros na média de preço fazendo com que apenas escalar jogadores de tal clube seria enviável por conta dos altos preços e dinheiro limitado no jogo. Então qual clube teria o melhor **custo benefício**? 
+Simples, dividimos a média de pontos pela média de preço.
+``` {r}
+scouts %>%
+  filter(participou & rodada >=1) %>%
+  inner_join(clubes, c("clube_id" = "id")) %>%
+  group_by(nome) %>%
+  summarise(custo_beneficio = mean(pontos_num)/mean(preco_num), .groups = 'drop') %>%
+  arrange(desc(custo_beneficio)) %>%
+  kbl() %>%
+  kable_styling()
+```
+Com isso, percebemos que em 2016 o clube com jogadores mais subvalorizados foi o Botafogo e com os mais sobrevalorizados foi o Internacional.
+
+**Conclusão:**
+  Apesar de o clube com melhor média ser o Flamengo, o dinheiro no fantasy game é limitado, assim, tornando inviável investir complemente em um clube com jogadores mais caros. Com isso, vale a pena diversificar sua escalação incluindo também jogadores baratos de outros clubes mas com bons custos benefícios.
+
+## **Qual melhor formação?**
+Para responder essa questão, temos que olhar as pontuações por posição e decidir quais posições teremos que colocar em detrimento de outras.
+
+* Analisando as médias, medianas, máximos e mínimos:
+``` {r}
+scouts %>%
+  inner_join(atletas, c("atleta_id" = "id")) %>%
+  filter(participou == TRUE & rodada >=1) %>%
+  group_by(posicao_id) %>%
+  summarise(media = mean(pontos_num, .groups = 'drop'),
+            mediana = median(pontos_num),
+            max_pontos = max(pontos_num),
+            min_pontos = min(pontos_num), .groups = 'drop') %>%
+  kbl() %>%
+  kable_styling()
+```
+``` {r}
+scouts %>%
+  inner_join(atletas, c("atleta_id" = "id")) %>%
+  filter(participou == TRUE & rodada>=1) %>%
+  group_by(posicao_id) %>%
+  ggplot(aes(posicao_id,pontos_num)) +
+  geom_boxplot()
+```
+
+Analisando o **custo benefício** das posições (pontos por preço) entre os jogadores com um histórico razoável(`media_num` > 6 pontos) a partir da quinta rodada, já que a média de pontos ainda não é bem estabelecida nas primeiras rodadas:
+
+``` {r}
+scouts %>%
+  inner_join(atletas, c("atleta_id" = "id")) %>%
+  filter(participou == TRUE & rodada>=5 & media_num > 6) %>%
+  group_by(posicao_id) %>%
+  summarise(custo_beneficio = pontos_num/preco_num, .groups = 'drop')%>%
+  ggplot(aes(posicao_id,custo_beneficio)) +
+  geom_boxplot()
+```
+
+**Conclusão:**
+
+* No geral o goleiro é a posição que tem o melhor custo benefício e a maior probabilidade de ter mais pontos dentro de campo apesar de suas pontuações estarem bem dispersas(segundo o boxplot).
+* No setor defensivo temos básicamente 3 escolhas: 2 zagueiros com 2 laterais, 3 zagueiros com 2 laterais ou 3 zagueiros sem laterais. Pelo que podemos ver, se quisermos máximizar a probalidade de ter mais pontos, teríamos que escolher a opção de 2 zagueiros e 2 laterais já que os laterais tem uma distribuição de pontos acima da de zagueiros assim como também um melhor custo benefício.
+* Sobre meias e atacantes teremos que fazer uma análise mais detalhada por rodada para escolher a quantidade melhor de cada posição de acordo com as oportunidades já que as duas posições tem desempenhos bem parecidos no geral.
+  
+
+
+
+
+## **Times que jogam em casa pontuam mais?**
+
+De inicio vamos analisar as pontuações média dos jogadores de cada clubes dentro e fora de casa.
+
+
+```{r}
+partidas_dentro_de_casa <- partidas %>%
+  inner_join(scouts, c("clube_casa_id" = "clube_id", "rodada" = "rodada")) %>%
+  filter(participou) %>%
+  group_by(clube_casa_id)%>%
+  summarise(media_casa = mean(pontos_num), .groups = 'drop') 
+
+
+partidas_fora_de_casa <- partidas %>%
+  inner_join(scouts, c("clube_visitante_id" = "clube_id", "rodada" = "rodada")) %>%
+  filter(participou) %>%
+  group_by(clube_visitante_id)%>%
+  summarise(media_visitante= mean(pontos_num), .groups = 'drop') 
+
+
+analise_casa <- partidas_dentro_de_casa %>%
+  inner_join(partidas_fora_de_casa, c("clube_casa_id" = "clube_visitante_id"))%>%
+  rename(clube_id = clube_casa_id ,
+         pontos_casa = media_casa  ,
+         pontos_visitante = media_visitante)%>%
+  arrange(desc(pontos_casa))
+
+analise_casa %>%
+  inner_join(clubes, (c("clube_id" = "id"))) %>%
+  select(nome, pontos_casa, pontos_visitante) %>%
+  kbl() %>%
+  kable_styling(full_width = F ,position = "left")
+
+
+analise_casa %>%
+  group_by(clube_id) %>%
+  ggplot() +
+  geom_point(aes(as.factor(clube_id), pontos_casa, color = "Dentro de casa")) +
+  geom_point(aes(as.factor(clube_id), pontos_visitante, color = "Fora de casa"))+
+  xlab("Clube ID")+
+  ylab("Média de Pontos")
+```
+
+Podemos ver que claramente os jogadores pontuam mais em média quando seus clubes estão jogando dentro de casa.
+
+```{r}
+partidas_dentro_de_casa %>%
+  inner_join(partidas_fora_de_casa, c("clube_casa_id" = "clube_visitante_id"))%>%
+  rename(clube_id = clube_casa_id ,
+         pontos_casa = media_casa  ,
+         pontos_visitante = media_visitante) %>%
+  summarise(`Clubes com mais pontos em casa` = sum(pontos_casa>pontos_visitante), .groups = 'drop')%>%
+  kbl() %>%
+  kable_styling(full_width = F ,position = "left")
+```
+
+Contando o número de clubes com mais pontos na média dentro de casa, temos o resultado que todos os 20 clubes pontuam mais com o fator casa.
+
+```{r}
+partidas_dentro_de_casa %>%
+  inner_join(partidas_fora_de_casa, c("clube_casa_id" = "clube_visitante_id"))%>%
+  rename(clube_id = clube_casa_id ,
+         pontos_casa = media_casa  ,
+         pontos_visitante = media_visitante) %>%
+  summarise(`Soma de pontos em casa` = sum(pontos_casa),
+            `Soma de pontos fora de casa` = sum(pontos_visitante), .groups = 'drop')%>%
+  kbl() %>%
+  kable_styling(full_width = F ,position = "left")
+
+
+```
+
+**Conclusão:**
+
+   Somando as médias de pontos dos clubes dentro e fora de casa também percebemos a diferença. Com isso, podemos inferir que no geral a pontuação diz bastante a respeito se o clube do jogador está jogando dentro de casa ou fora.
+
+
+## **Vale mais a pena escalar meias defensivos ou ofensivos?**
+
+Pra isso, vamos analisar a correlação entre as pontuações médias ligadas a roubo de bola e ataque com as pontuações médias dos jogadores de meio. Vamos filtrar, além da posição "meia", resultados apenas para jogadores que jogaram mais de 12 jogos.
+
+```{r}
+meias_que_jogaram_constantemente <- scouts %>%
+  left_join(atletas, c("atleta_id" = "id")) %>%
+  filter(posicao_id == "meia") %>%
+  group_by(atleta_id) %>%
+  mutate(participacoes = sum(participou)) %>%
+  filter(participacoes > 12) 
+
+scouts %>%
+  left_join(atletas, c("atleta_id" = "id")) %>%
+  filter(participou & posicao_id == "meia" &
+           atleta_id %in% meias_que_jogaram_constantemente$atleta_id) %>%
+  group_by(atleta_id)%>%
+  summarise(media_pontos = mean(pontos_num),
+            media_roubadas = mean(RB),
+            media_faltas_cometidas = mean(FC),
+            media_assistencias = mean(A),
+            media_finalizacao_na_trave = mean(FT),
+            media_finalizacao_defendida = mean(FD),
+            media_finalizacao_fora = mean(FF),
+            media_gol = mean(G), .groups = 'drop') %>%
+  cor() %>%
+  corrplot(type = "lower",method = "pie", addCoef.col = "black")
+```
+  
+**Conclusão:**
+
+  Observando a coluna `pontos_num`, apesar de roubadas de bola (RB) ter uma boa correlação com a pontuação do jogador, os gols e finalizações tem uma correlação maior, assim, tornando preferível meios de campo que atacam mais mas não tornando descartável os meias que também defendem, dependendo da rodada.
+  
+
+**Bibliotecas utilizadas:** tidyverse, kableExtra e corrplot.
