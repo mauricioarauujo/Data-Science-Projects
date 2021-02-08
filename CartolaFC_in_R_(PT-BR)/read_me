@@ -1,0 +1,18 @@
+   CartolaFC é o jogo futebol fantasy mais popular do Brasil. Antes de cada rodada da Liga Brasileira de Futebol, os jogadores
+escolhem os atletas que desejam para seus times e marcam pontos com base em seu desempenho na vida real. Com a nossa base da
+dados, no ano de 2016, teremos acesso às pontuações de cada jogador a cada rodada junto de vários atributos que podemos usar
+na nossa análise.
+
+   Com a nossa base de dados, buscaremos entender quais estratégias funcionam melhor para termos a probabilidade de somar o maior
+número de pontos no jogo, de acordo com a pontuação dos jogadores e suas determinadas características.
+
+Assim poderemos responder as seguintes questões:
+
+    Quais clubes tem jogadores com mais pontos em média?
+    Qual melhor formação?
+    Times que jogam em casa pontuam mais?
+    Vale mais a pena escalar meias defensivos ou ofensivos?
+
+Obs: Deixando claro que nossas análises serão baseadas em estatística do campeonato em questão de maneira geral e que, obviamente,
+não constitui a melhor estratégia já que ela pode ser superada por análises mais aprofundadas por quem conhece melhor a situação dos
+jogadores e clubes em determinadas rodadas separadamente.
